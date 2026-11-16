@@ -75,6 +75,24 @@ async function createOAuthHeader(method: string, url: string) {
     .join(', ')
 }
 
+// X devuelve errores como { title, detail, reason } o { errors: [{ message }] }.
+// Se exponen solo esos campos descriptivos, nunca cabeceras ni credenciales.
+function describeXError(payload: Record<string, unknown>) {
+  const parts: string[] = []
+  for (const field of ['title', 'reason', 'detail'] as const) {
+    const value = payload?.[field]
+    if (typeof value === 'string' && value && !parts.includes(value)) parts.push(value)
+  }
+  const errors = payload?.errors
+  if (Array.isArray(errors)) {
+    for (const item of errors) {
+      const message = (item as { message?: unknown })?.message
+      if (typeof message === 'string' && !parts.includes(message)) parts.push(message)
+    }
+  }
+  return parts.length ? ': ' + parts.join(' · ').slice(0, 500) : '.'
+}
+
 async function callX(method: string, url: string, body?: unknown) {
   const authorization = await createOAuthHeader(method, url)
   const response = await fetch(url, {
@@ -89,7 +107,7 @@ async function callX(method: string, url: string, body?: unknown) {
   const payload = await response.json().catch(() => ({}))
   if (!response.ok) {
     console.error('X API error', response.status, payload)
-    throw new Error('X API ha rechazado la solicitud (' + response.status + ').')
+    throw new Error('X API ha rechazado la solicitud (' + response.status + ')' + describeXError(payload))
   }
   return payload
 }
