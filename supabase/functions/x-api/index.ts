@@ -128,7 +128,7 @@ Deno.serve(async (request) => {
 
   try {
     if (input.action === 'me') {
-      const profile = await callX('GET', 'https://api.x.com/2/users/me?user.fields=profile_image_url,public_metrics')
+      const profile = await callX('GET', 'https://api.x.com/2/users/me')
       return json({ data: profile.data })
     }
 
